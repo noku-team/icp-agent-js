@@ -153,8 +153,6 @@ HDKey.prototype.deriveChild = function (index: number) {
     data = Buffer.concat([this.publicKey, indexBuffer]);
   }
 
-  console.log(this.chainCode);
-
   const I = createHmac('sha512', this.chainCode).update(data).digest();
   const IL = I.slice(0, 32);
   const IR = I.slice(32);
