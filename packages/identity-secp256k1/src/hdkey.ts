@@ -35,29 +35,29 @@ function convertWordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray) {
 	return u8_array;
 }
 
-function convertUint8ArrayToWordArray(u8Array: Uint8Array) {
-	// eslint-disable-next-line prefer-const
-	let words = [], i = 0, len = u8Array.length;
+// function convertUint8ArrayToWordArray(u8Array: Uint8Array) {
+// 	// eslint-disable-next-line prefer-const
+// 	let words = [], i = 0, len = u8Array.length;
 
-	while (i < len) {
-		words.push(
-			(u8Array[i++] << 24) |
-			(u8Array[i++] << 16) |
-			(u8Array[i++] << 8)  |
-			(u8Array[i++])
-		);
-	}
+// 	while (i < len) {
+// 		words.push(
+// 			(u8Array[i++] << 24) |
+// 			(u8Array[i++] << 16) |
+// 			(u8Array[i++] << 8)  |
+// 			(u8Array[i++])
+// 		);
+// 	}
 
-	return {
-		sigBytes: words.length * 4,
-		words: words
-	};
-}
+// 	return {
+// 		sigBytes: words.length * 4,
+// 		words: words
+// 	};
+// }
 
-// function convertWordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray) {                                                                                       
-//   const l = wordArray.sigBytes;                                                                                                        
-//   const words = wordArray.words;                                                                                                       
-//   const result = new Uint8Array(l);                                                                                                    
+// function convertWordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray) {
+//   const l = wordArray.sigBytes;
+//   const words = wordArray.words;
+//   const result = new Uint8Array(l);
 //   let i=0 /*dst*/, j=0 /*src*/;
 //   // eslint-disable-next-line no-constant-condition
 //   while(true) {
@@ -68,13 +68,13 @@ function convertUint8ArrayToWordArray(u8Array: Uint8Array) {
 //       result[i++] = (w & 0xff000000) >>> 24;
 //       if (i==l)
 //           break;
-//       result[i++] = (w & 0x00ff0000) >>> 16;                                                                                            
-//       if (i==l)                                                                                                                        
-//           break;                                                                                                                       
+//       result[i++] = (w & 0x00ff0000) >>> 16;
+//       if (i==l)
+//           break;
 //       result[i++] = (w & 0x0000ff00) >>> 8;
 //       if (i==l)
 //           break;
-//       result[i++] = (w & 0x000000ff);                                                                                                  
+//       result[i++] = (w & 0x000000ff);
 //   }
 //   return result;
 // }
@@ -218,9 +218,9 @@ HDKey.prototype.deriveChild = function (index: number) {
 
   // const I2 = createHmac('sha512', this.chainCode).update(data).digest();
 
-  console.log(data.toString())
+  console.log(this.chainCode)
 
-  const I = Buffer.from(convertWordArrayToUint8Array(CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA512, convertUint8ArrayToWordArray(this.chainCode)).update(data.toString('hex')).finalize()));
+  const I = Buffer.from(convertWordArrayToUint8Array(CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA512, this.chainCode.toString()).update(data.toString('hex')).finalize()));
   const IL = I.slice(0, 32);
   const IR = I.slice(32);
 
