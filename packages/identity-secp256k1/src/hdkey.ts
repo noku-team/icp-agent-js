@@ -6,7 +6,9 @@ import assert from 'assert';
 import { Buffer } from 'buffer';
 import bs58check from 'bs58check';
 import secp256k1 from 'secp256k1';
-import { createHmac, createHash, randomBytes } from 'crypto';
+import CryptoJS from 'crypto-js';
+import { createHash } from 'crypto'
+
 
 const MASTER_SECRET = Buffer.from('Bitcoin seed', 'utf8');
 const HARDENED_OFFSET = 0x80000000;
@@ -14,6 +16,68 @@ const LEN = 78;
 
 // Bitcoin hardcoded by default, can use package `coininfo` for others
 const BITCOIN_VERSIONS = { private: 0x0488ade4, public: 0x0488b21e };
+
+
+function convertWordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray) {
+	// eslint-disable-next-line prefer-const
+	let len = wordArray.words.length,
+		// eslint-disable-next-line prefer-const
+		u8_array = new Uint8Array(len << 2),
+		offset = 0, word, i
+	;
+	for (i=0; i<len; i++) {
+		word = wordArray.words[i];
+		u8_array[offset++] = word >> 24;
+		u8_array[offset++] = (word >> 16) & 0xff;
+		u8_array[offset++] = (word >> 8) & 0xff;
+		u8_array[offset++] = word & 0xff;
+	}
+	return u8_array;
+}
+
+function convertUint8ArrayToWordArray(u8Array: Uint8Array) {
+	// eslint-disable-next-line prefer-const
+	let words = [], i = 0, len = u8Array.length;
+
+	while (i < len) {
+		words.push(
+			(u8Array[i++] << 24) |
+			(u8Array[i++] << 16) |
+			(u8Array[i++] << 8)  |
+			(u8Array[i++])
+		);
+	}
+
+	return {
+		sigBytes: words.length * 4,
+		words: words
+	};
+}
+
+// function convertWordArrayToUint8Array(wordArray: CryptoJS.lib.WordArray) {                                                                                       
+//   const l = wordArray.sigBytes;                                                                                                        
+//   const words = wordArray.words;                                                                                                       
+//   const result = new Uint8Array(l);                                                                                                    
+//   let i=0 /*dst*/, j=0 /*src*/;
+//   // eslint-disable-next-line no-constant-condition
+//   while(true) {
+//       // here i is a multiple of 4
+//       if (i==l)
+//           break;
+//       const w = words[j++];
+//       result[i++] = (w & 0xff000000) >>> 24;
+//       if (i==l)
+//           break;
+//       result[i++] = (w & 0x00ff0000) >>> 16;                                                                                            
+//       if (i==l)                                                                                                                        
+//           break;                                                                                                                       
+//       result[i++] = (w & 0x0000ff00) >>> 8;
+//       if (i==l)
+//           break;
+//       result[i++] = (w & 0x000000ff);                                                                                                  
+//   }
+//   return result;
+// }
 
 /**
  *
@@ -152,7 +216,11 @@ HDKey.prototype.deriveChild = function (index: number) {
     data = Buffer.concat([this.publicKey, indexBuffer]);
   }
 
-  const I = createHmac('sha512', this.chainCode).update(data).digest();
+  // const I2 = createHmac('sha512', this.chainCode).update(data).digest();
+
+  console.log(data.toString())
+
+  const I = Buffer.from(convertWordArrayToUint8Array(CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA512, convertUint8ArrayToWordArray(this.chainCode)).update(data.toString('hex')).finalize()));
   const IL = I.slice(0, 32);
   const IR = I.slice(32);
 
@@ -204,7 +272,8 @@ HDKey.prototype.verify = function (hash: Buffer, signature: Buffer) {
 };
 
 HDKey.prototype.wipePrivateData = function () {
-  if (this._privateKey) randomBytes(this._privateKey.length).copy(this._privateKey);
+  // if (this._privateKey) randomBytes(this._privateKey.length).copy(this._privateKey);
+  if (this._privateKey) this._privateKey = CryptoJS.lib.WordArray.random(this._privateKey.length);
   this._privateKey = null;
   return this;
 };
@@ -217,7 +286,8 @@ HDKey.prototype.toJSON = function () {
 };
 
 HDKey.fromMasterSeed = function (seedBuffer: Buffer, versions?: any) {
-  const I = createHmac('sha512', MASTER_SECRET).update(seedBuffer).digest();
+  // const I = createHmac('sha512', MASTER_SECRET).update(seedBuffer).digest();
+  const I = Buffer.from(convertWordArrayToUint8Array(CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA512, MASTER_SECRET.toString()).update(seedBuffer.toString()).finalize()));
   const IL = I.slice(0, 32);
   const IR = I.slice(32);
 
@@ -281,8 +351,10 @@ function serialize(hdkey: any, version: any, key: any) {
 }
 
 function hash160(buf: Buffer) {
-  const sha = createHash('sha256').update(buf).digest();
-  return createHash('ripemd160').update(sha).digest();
+  // const sha = createHash('sha256').update(buf).digest();
+  const sha = CryptoJS.algo.SHA256.create().update(buf.toString()).finalize();
+  // return createHash('ripemd160').update(sha).digest();
+  return Buffer.from(convertWordArrayToUint8Array(CryptoJS.algo.RIPEMD160.create().update(sha).finalize()));
 }
 
 HDKey.HARDENED_OFFSET = HARDENED_OFFSET;
